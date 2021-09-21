@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>A-Frame Game - James McKenna</title>
+    <!--All the libraries/frameworks needed for this project-->
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/alvinwan/aframe-low-poly@0.0.2/dist/aframe-low-poly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/alvinwan/mirrorvr@0.2.2/dist/mirrorvr.min.js"></script>
+    <script src="https://unpkg.com/aframe-play-sound-on-event@1.0.2/dist/aframe-play-sound-on-event.min.js"></script>
+    <script src="assets/script.js"></script>
+
+    <audio id="music" src="assets/overseer.mp3"></audio>
+    <script>
+      AFRAME.registerComponent('play', {
+        init: function(){
+          var myEl = document.querySelector('#musicPlayer');
+          this.el.addEventListener('click', function(){
+           myEl.components.sound.playSound();
+          });
+        }
+      });
+
+      AFRAME.registerComponent('stop', {
+        init: function(){
+          var myEl = document.querySelector('#musicPlayer');
+          this.el.addEventListener('click', function(){
+           myEl.components.sound.stopSound();
+          });
+        }
+      });
+    </script>
+    <!--Creates the components to play and stop audio-->
+  </head>
+  <body>
+    <a-scene inspector keyboard-shortcuts screenshot vr-mode-ui device-orientation-permission-ui>
+
+      <a-sky id="img" src="assets/background.jpg" rotation="0 105 0" radius="30"></a-sky>
+
+      <!-- Mixins -->
+      <a-assets>
+        <a-entity id="musicPlayer" position="0 0 0" sound = "src: #music"></a-entity>
+        <a-mixin id="foliage" geometry="
+            primitive: cone;
+            segments-height: 1;
+            segments-radial:4;
+            radius-bottom:0.3;"
+           material="color:#006400; flat-shading: true;"></a-mixin>
+        <a-mixin id="trunk" geometry="
+            primitive: box;
+            height:0.5;
+            width:0.1;
+            depth:0.1;"
+           material="color:brown;"></a-mixin>
+         <a-mixin id="text" text="
+             font:exo2bold;
+             anchor:center;
+             align:center;"></a-mixin>
+         <a-mixin id="title" text="
+             font:exo2bold;
+             height:40;
+             width:40;
+             opacity:0.75;
+             anchor:center;
+             align:center;"></a-mixin>
+         <a-mixin id="copy" text="
+             font:exo2bold;
+             height:5;
+             width:5;
+             opacity:0.75;
+             anchor:center;
+             align:center;"></a-mixin>
+         <a-mixin id="heading" text="
+             font:exo2bold;
+             height:10;
+             width:10;
+             opacity:1;
+             anchor:center;
+             align:center;"></a-mixin>
+      </a-assets>
+      <!--The onscreen text displayed to the user-->
+
+      <!-- Lights -->
+      <a-light type="directional" castShadow="false" intensity="1" color="white" position="0 5 0"></a-light>
+      <a-light intensity="0.8" type="ambient" color="white" position="0 0 0"></a-light>
+
+      <!-- Camera -->
+      <a-camera lane-controls position="0 0 2.5">
+          <a-entity id="cursor-mobile" cursor="fuse: true; fuseTimeout: 250"
+                movement-controls
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                material="color: white; shader: flat"
+                scale="0.5 0.5 0.5"
+                raycaster="far: 50; interval: 1000; objects: .clickable">
+          <a-animation begin="fusing" easing="ease-in" attribute="scale"
+             fill="backwards" from="1 1 1" to="0.2 0.2 0.2" dur="250"></a-animation>
+      </a-camera>
+
+      <!-- Platform -->
+      <lp-cone amplitude="0.05" amplitude-variance="0.05" scale="2 2 2" shadow position="0 -3.5 -1.5" rotation="90 0 0" radius-top="1.9" radius-bottom="1.9" segments-radial="20" segments-height="20" height="20" color="#32CD32" emissive-intensity="1">
+        <a-entity id="tree-container" position="0 .5 -1.5" rotation="-90 0 0">
+
+          <!-- Trees -->
+          <a-entity data-tree-position-index="1" class="tree" id="template-tree-center" shadow scale="0.3 0.3 0.3" position="0 0.6 0">
+            <a-entity mixin="foliage"></a-entity>
+            <a-entity mixin="trunk" position="0 -0.5 0"></a-entity>
+            <a-animation attribute="position" ease="linear" from="0 0.6 -7" to="0 0.6 1.5" dur="5000"></a-animation>
+          </a-entity>
+
+          <a-entity data-tree-position-index="0" class="tree" id="template-tree-left" shadow scale="0.3 0.3 0.3" position="-0.5 0.55 0">
+            <a-entity mixin="foliage"></a-entity>
+            <a-entity mixin="trunk" position="0 -0.5 0"></a-entity>
+            <a-animation attribute="position" ease="linear" from="-0.5 0.55 -7" to="-0.5 0.55 1.5" dur="5000"></a-animation>
+          </a-entity>
+
+          <a-entity data-tree-position-index="2" class="tree" id="template-tree-right" shadow scale="0.3 0.3 0.3" position="0.5 0.55 0">
+            <a-entity mixin="foliage"></a-entity>
+            <a-entity mixin="trunk" position="0 -0.5 0"></a-entity>
+            <a-animation attribute="position" ease="linear" from="0.5 0.55 -7" to="0.5 0.55 1.5" dur="5000"></a-animation>
+          </a-entity>
+
+          <!-- Score -->
+          <a-text id="score" value="" mixin="text" height="40" width="40" position="0 1.2 -3" opacity="0.75"></a-text>
+
+          <!-- Menus -->
+          <a-entity id="menu-container">
+            <a-entity id="start-menu" position="0 1.5 -3">
+              <a-entity id="start-copy" position="0 1 0" play>
+                <a-text value="Turn left and right to move the car, and avoid hitting the trees" mixin="copy"></a-text>
+                <a-text value="Start" position="0 0.75 0" mixin="heading"></a-text>
+                <a-box id="start-button" position="0 0.65 -0.05" width="1.5" height="0.6" depth="0.1"></a-box>
+              </a-entity>
+              <a-text value="Tree Runner" mixin="title"></a-text>
+            </a-entity>
+            <a-entity id="game-over" position="0 1.1 -3">
+              <a-text value="?" mixin="heading" id="game-score" position="0 1.7 0"></a-text>
+              <a-text value="Score" mixin="copy" position="0 1.2 0"></a-text>
+              <a-entity id="game-over-copy">
+                <a-text value="Restart" mixin="heading" position="0 0.7 0"></a-text>
+                <a-box id="restart-button" position="0 0.6 -0.05" width="2" height="0.6" depth="0.1" stop play></a-box>
+              </a-entity>
+              <a-text value="Game Over" mixin="title"></a-text>
+            </a-entity>
+          </a-entity>
+
+          <!-- Player -->
+          <a-entity id="player" player>
+              <a-gltf-model id="car" position="0 0 0" rotation="0 180 0" scale="0.1 0.1 0.1" src="./assets/car.glb" crossorigin="anonymous">
+              <a-animation repeat="indefinite" direction="alternate" attribute="position" ease="ease-in-out" from="0 0.5 0.6" to="0 0.525 0.6"></a-animation>
+              <a-animation repeat="indefinite" direction="alternate" attribute="radius" from="0.05" to="0.055" dur="1500"></a-animation>
+              <a-light type="directional" intensity="1" color="blue">
+                <a-animation repeat="indefinite" direction="alternate-reverse" attribute="intensity" ease="ease-in-out" from="0.35" to="0.5"></a-animation>
+              </a-light>
+            </a-gltf-model>
+          </a-entity>
+        </a-entity>
+      </lp-cone>
+    </a-scene>
+  </body>
+</html>
